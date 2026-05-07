@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>실시간 미세먼지 알리미</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        h1 { font-size: 1.2rem; color: #333; }
+        .dust-value { font-size: 3rem; font-weight: bold; margin: 10px 0; }
+        .status { font-size: 1.5rem; margin-bottom: 20px; }
+        .info { font-size: 0.9rem; color: #666; }
+        /* 상태별 색상 */
+        .good { color: #32a852; }
+        .normal { color: #ebbc05; }
+        .bad { color: #eb4034; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>우리 동네 실시간 미세먼지</h1>
+        <div id="location" style="font-weight: bold;">측정소: 종로구</div>
+        <div id="dust-val" class="dust-value">-</div>
+        <div id="status-text" class="status">데이터 불러오는 중...</div>
+        <p class="info">기준: 한국환경공단 실시간 데이터</p>
+    </div>
+
+    <script>
+        // 발급받은 API 키
+        const SERVICE_KEY = '53424be73b8f674d630b18cdc90b5c8423508a42ee401fd82e9607db9cbf8fa4';
+        
+        async function getDustData() {
+            // 미세먼지 API URL (시도별 실시간 측정정보 조회)
+            const url = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=100&pageNo=1&sidoName=서울&ver=1.0`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // 첫 번째 측정소(보통 종로구 등) 데이터 가져오기
+                const item = data.response.body.items[0];
+                const pm10Value = item.pm10Value;
+                const stationName = item.stationName;
+
+                document.getElementById('location').innerText = `측정소: ${stationName}`;
+                document.getElementById('dust-val').innerText = `${pm10Value} ㎍/㎥`;
+                
+                const statusDisplay = document.getElementById('status-text');
+                const valDisplay = document.getElementById('dust-val');
+
+                // 미세먼지 수치에 따른 상태 표시
+                if (pm10Value <= 30) {
+                    statusDisplay.innerText = "좋음 😄";
+                    valDisplay.className = "dust-value good";
+                } else if (pm10Value <= 80) {
+                    statusDisplay.innerText = "보통 🙂";
+                    valDisplay.className = "dust-value normal";
+                } else {
+                    statusDisplay.innerText = "나쁨 😷";
+                    valDisplay.className = "dust-value bad";
+                }
+
+            } catch (error) {
+                console.error('데이터 호출 에러:', error);
+                document.getElementById('status-text').innerText = "데이터 로드 실패";
+            }
+        }
+
+        getDustData();
+    </script>
+</body>
+</html>
