@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>실시간 미세먼지 알리미</title>
+    <title>실시간 익산 미세먼지 알리미</title>
     <style>
         body { font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
         .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; width: 300px; }
@@ -10,7 +10,6 @@
         .dust-value { font-size: 3rem; font-weight: bold; margin: 10px 0; }
         .status { font-size: 1.5rem; margin-bottom: 20px; }
         .info { font-size: 0.9rem; color: #666; }
-        /* 상태별 색상 */
         .good { color: #32a852; }
         .normal { color: #ebbc05; }
         .bad { color: #eb4034; }
@@ -20,36 +19,39 @@
 
     <div class="card">
         <h1>우리 동네 실시간 미세먼지</h1>
-        <div id="location" style="font-weight: bold;">측정소: 종로구</div>
+        <div id="location" style="font-weight: bold;">측정소: 익산시</div>
         <div id="dust-val" class="dust-value">-</div>
         <div id="status-text" class="status">데이터 불러오는 중...</div>
         <p class="info">기준: 한국환경공단 실시간 데이터</p>
     </div>
 
     <script>
-        // 발급받은 API 키
         const SERVICE_KEY = '53424be73b8f674d630b18cdc90b5c8423508a42ee401fd82e9607db9cbf8fa4';
         
         async function getDustData() {
-            // 미세먼지 API URL (시도별 실시간 측정정보 조회)
-            const url = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=100&pageNo=1&sidoName=서울&ver=1.0`;
+            // 1. sidoName을 '전북'으로 변경
+            const url = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=100&pageNo=1&sidoName=${encodeURIComponent('전북')}&ver=1.0`;
 
             try {
                 const response = await fetch(url);
                 const data = await response.json();
+                const items = data.response.body.items;
+
+                // 2. 전북 데이터 중 측정소 이름이 '익산'을 포함하는 데이터 찾기
+                // (익산에는 '남중동', '팔봉동' 등 여러 측정소가 있을 수 있어 첫 번째 익산 데이터를 선택합니다)
+                const iksanData = items.find(item => item.stationName.includes('익산') || item.stationName === '남중동'); 
                 
-                // 첫 번째 측정소(보통 종로구 등) 데이터 가져오기
-                const item = data.response.body.items[0];
+                // 만약 특정 동네를 지정하고 싶다면 item.stationName === '남중동' 등으로 수정 가능합니다.
+                const item = iksanData || items[0]; 
                 const pm10Value = item.pm10Value;
                 const stationName = item.stationName;
 
-                document.getElementById('location').innerText = `측정소: ${stationName}`;
+                document.getElementById('location').innerText = `측정소: ${stationName} (익산)`;
                 document.getElementById('dust-val').innerText = `${pm10Value} ㎍/㎥`;
                 
                 const statusDisplay = document.getElementById('status-text');
                 const valDisplay = document.getElementById('dust-val');
 
-                // 미세먼지 수치에 따른 상태 표시
                 if (pm10Value <= 30) {
                     statusDisplay.innerText = "좋음 😄";
                     valDisplay.className = "dust-value good";
